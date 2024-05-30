@@ -7,10 +7,10 @@ mod models;
 mod db;
 mod handlers;
  
-#[actix_web::get("/greet/{name}")]
-async fn greet(name: web::Path<(String)>) -> impl Responder {
-    HttpResponse::Ok().body(format!("Hello, {}!", name))
-}
+// #[actix_web::get("/greet/{name}")]
+// async fn greet(name: web::Path<(String)>) -> impl Responder {
+//     HttpResponse::Ok().body(format!("Hello, {}!", name))
+// }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -27,8 +27,44 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(pool.clone()))
-            .service(greet)
-            .service(handlers::user_handler::get_user)
+            .service(
+                web::scope("/user")
+                    .service(
+                        web::resource("")
+                            .route(web::post().to(handlers::user_handler::create_user))
+                            .route(web::put().to(handlers::user_handler::update_user))
+                    )
+                    .service(
+                        web::resource("/{user_id}")
+                            .route(web::get().to(handlers::user_handler::get_user))
+                    )
+            )
+            .service(
+                web::scope("/drinks")
+                    .service(
+                        web::resource("/{store_name}")
+                            .route(web::get().to(handlers::store_handler::get_drinks_from_store))
+                    )   
+            )
+            .service(
+                web::scope("/store")
+                    .service(
+                        web::resource("")
+                            .route(web::get().to(handlers::store_handler::get_stores))
+                    )
+            )
+            .service(
+                web::scope("/order_history")
+                    .service(
+                        web::resource("")
+                            .route(web::post().to(handlers::order_history_handler::create_order_history))
+                            .route(web::put().to(handlers::order_history_handler::update_order_history))
+                    )
+                    .service(
+                        web::resource("/{user_id}")
+                            .route(web::get().to(handlers::order_history_handler::get_order_history))
+                    )
+            )
         })
             .bind(("127.0.0.1", port))?
             .run()
